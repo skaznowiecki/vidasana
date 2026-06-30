@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  clearCartFromStorage,
   getCartQuantity,
   loadCartFromStorage,
   saveCartToStorage,
@@ -33,6 +34,7 @@ interface CartContextValue {
   decrement: (product: Product) => void;
   updateItemQuantity: (productId: string, unit: ProductUnit, quantity: number) => void;
   clearCart: () => void;
+  resetCart: () => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -191,8 +193,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         });
       });
 
+      clearCartFromStorage();
       return [];
     });
+  }, []);
+
+  const resetCart = useCallback(() => {
+    clearCartFromStorage();
+    setItems([]);
   }, []);
 
   const getQuantity = useCallback(
@@ -212,8 +220,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       decrement,
       updateItemQuantity: updateItemQty,
       clearCart,
+      resetCart,
     }),
-    [items, hydrated, getQuantity, setQuantity, increment, decrement, updateItemQty, clearCart],
+    [items, hydrated, getQuantity, setQuantity, increment, decrement, updateItemQty, clearCart, resetCart],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -14,7 +14,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { formatPrice } from "@/lib/format";
-import { openWhatsAppOrder } from "@/lib/whatsapp";
+import { checkoutViaWhatsApp } from "@/lib/whatsapp";
 
 interface CartSheetProps {
   open: boolean;
@@ -36,7 +36,7 @@ function useIsDesktop() {
 }
 
 export function CartSheet({ open, onOpenChange }: CartSheetProps) {
-  const { items, totalPrice, clearCart } = useCart();
+  const { items, totalPrice, clearCart, resetCart } = useCart();
   const isDesktop = useIsDesktop();
 
   return (
@@ -81,7 +81,11 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
             <div className="flex flex-col gap-1.5 md:gap-2">
               <Button
                 type="button"
-                onClick={() => openWhatsAppOrder(items, "cart_sheet")}
+                onClick={() => {
+                  checkoutViaWhatsApp(items, "cart_sheet");
+                  resetCart?.();
+                  onOpenChange(false);
+                }}
                 className="h-11 w-full rounded-full bg-sage text-cream hover:bg-sage-dark md:h-12 md:cursor-pointer"
               >
                 <MessageCircle className="mr-2 h-4 w-4" />

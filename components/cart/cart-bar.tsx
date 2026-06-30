@@ -7,10 +7,10 @@ import { CartSheet } from "@/components/cart/cart-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/format";
-import { openWhatsAppOrder } from "@/lib/whatsapp";
+import { checkoutViaWhatsApp } from "@/lib/whatsapp";
 
 export function CartBar() {
-  const { items, totalItems, totalPrice, hydrated } = useCart();
+  const { items, totalItems, totalPrice, hydrated, resetCart } = useCart();
   const [open, setOpen] = useState(false);
 
   if (!hydrated) return null;
@@ -44,7 +44,10 @@ export function CartBar() {
           <Button
             type="button"
             disabled={items.length === 0}
-            onClick={() => openWhatsAppOrder(items, "cart_bar")}
+            onClick={() => {
+              checkoutViaWhatsApp(items, "cart_bar");
+              resetCart?.();
+            }}
             className="h-11 shrink-0 rounded-full bg-sage px-4 text-cream hover:bg-sage-dark md:px-6"
           >
             <MessageCircle className="mr-2 h-4 w-4" />

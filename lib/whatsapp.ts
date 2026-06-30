@@ -1,4 +1,4 @@
-import { totalPrice } from "./cart-utils";
+import { clearCartFromStorage, totalPrice } from "./cart-utils";
 import { logEvent } from "./event-log";
 import { formatPrice, formatProductName } from "./format";
 import type { CartItem } from "./types";
@@ -44,4 +44,14 @@ export function openWhatsAppOrder(
   });
 
   window.open(buildWhatsAppOrderUrl(items), "_blank", "noopener,noreferrer");
+}
+
+export function checkoutViaWhatsApp(
+  items: CartItem[],
+  source: "cart_bar" | "cart_sheet" = "cart_bar",
+): void {
+  if (items.length === 0) return;
+
+  openWhatsAppOrder(items, source);
+  clearCartFromStorage();
 }
