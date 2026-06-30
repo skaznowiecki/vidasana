@@ -1,8 +1,9 @@
 import { totalPrice } from "./cart-utils";
+import { logEvent } from "./event-log";
 import { formatPrice, formatProductName } from "./format";
 import type { CartItem } from "./types";
 
-const WHATSAPP_NUMBER = "5491164327163";
+const WHATSAPP_NUMBER = "5491168201870";
 
 export function buildWhatsAppOrderUrl(items: CartItem[]): string {
   const total = totalPrice(items);
@@ -24,7 +25,23 @@ export function buildWhatsAppOrderUrl(items: CartItem[]): string {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(body)}`;
 }
 
-export function openWhatsAppOrder(items: CartItem[]): void {
+export function openWhatsAppOrder(
+  items: CartItem[],
+  source: "cart_bar" | "cart_sheet" = "cart_bar",
+): void {
   if (items.length === 0) return;
+
+  logEvent("checkout.initiated", {
+    itemCount: items.length,
+    totalPrice: totalPrice(items),
+    source,
+    items: items.map((item) => ({
+      productId: item.productId,
+      unit: item.unit,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+    })),
+  });
+
   window.open(buildWhatsAppOrderUrl(items), "_blank", "noopener,noreferrer");
 }

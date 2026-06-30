@@ -81,19 +81,11 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
             <div className="flex flex-col gap-1.5 md:gap-2">
               <Button
                 type="button"
-                onClick={() => openWhatsAppOrder(items)}
+                onClick={() => openWhatsAppOrder(items, "cart_sheet")}
                 className="h-11 w-full rounded-full bg-sage text-cream hover:bg-sage-dark md:h-12 md:cursor-pointer"
               >
                 <MessageCircle className="mr-2 h-4 w-4" />
                 Comprar por WhatsApp
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => openWhatsAppOrder(items)}
-                className="hidden h-12 w-full rounded-full border-sage/25 text-sage hover:bg-sage/5 md:inline-flex md:cursor-pointer"
-              >
-                Contactar
               </Button>
               <Button
                 type="button"

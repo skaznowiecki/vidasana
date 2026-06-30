@@ -17,6 +17,7 @@ import {
   totalPrice,
   updateItemQuantity,
 } from "@/lib/cart-utils";
+import { logEvent } from "@/lib/event-log";
 import { formatProductName } from "@/lib/format";
 import { getProductVariant } from "@/lib/products";
 import type { CartItem, Product, ProductUnit } from "@/lib/types";
@@ -52,6 +53,40 @@ function buildCartItem(product: Product, quantity: number): CartItem | null {
   };
 }
 
+function logQuantityChange(
+  productId: string,
+  unit: ProductUnit,
+  previousQuantity: number,
+  nextQuantity: number,
+  nextItems: CartItem[],
+) {
+  queueMicrotask(() => {
+    const totals = {
+      cartTotalItems: totalItems(nextItems),
+      cartTotalPrice: totalPrice(nextItems),
+    };
+
+    if (nextQuantity > previousQuantity) {
+      logEvent("cart.add", {
+        productId,
+        unit,
+        quantity: nextQuantity,
+        previousQuantity,
+        ...totals,
+      });
+      return;
+    }
+
+    logEvent("cart.remove", {
+      productId,
+      unit,
+      quantity: nextQuantity,
+      previousQuantity,
+      ...totals,
+    });
+  });
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
@@ -74,9 +109,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const variant = getProductVariant(product);
     if (!variant) return;
 
-    setItems((current) =>
-      updateItemQuantity(current, product.id, variant.unit, quantity),
-    );
+    setItems((current) => {
+      const previousQuantity = getCartQuantity(current, product.id, variant.unit);
+      const nextItems = updateItemQuantity(current, product.id, variant.unit, quantity);
+
+      if (previousQuantity !== quantity) {
+        logQuantityChange(product.id, variant.unit, previousQuantity, quantity, nextItems);
+      }
+
+      return nextItems;
+    });
   }, []);
 
   const increment = useCallback(
@@ -92,10 +134,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
         if (existingQty === 0) {
           const item = buildCartItem(product, 1);
-          return item ? [...current, item] : current;
+          if (!item) return current;
+
+          const nextItems = [...current, item];
+          logQuantityChange(product.id, variant.unit, 0, 1, nextItems);
+          return nextItems;
         }
 
-        return updateItemQuantity(current, product.id, variant.unit, nextQty);
+        const nextItems = updateItemQuantity(current, product.id, variant.unit, nextQty);
+        logQuantityChange(product.id, variant.unit, existingQty, nextQty, nextItems);
+        return nextItems;
       });
     },
     [],
@@ -107,18 +155,45 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     setItems((current) => {
       const existingQty = getCartQuantity(current, product.id, variant.unit);
-      return updateItemQuantity(current, product.id, variant.unit, existingQty - 1);
+      const nextQty = existingQty - 1;
+      const nextItems = updateItemQuantity(current, product.id, variant.unit, nextQty);
+      logQuantityChange(product.id, variant.unit, existingQty, nextQty, nextItems);
+      return nextItems;
     });
   }, []);
 
   const updateItemQty = useCallback(
     (productId: string, unit: ProductUnit, quantity: number) => {
-      setItems((current) => updateItemQuantity(current, productId, unit, quantity));
+      setItems((current) => {
+        const previousQuantity = getCartQuantity(current, productId, unit);
+        const nextItems = updateItemQuantity(current, productId, unit, quantity);
+
+        if (previousQuantity !== quantity) {
+          logQuantityChange(productId, unit, previousQuantity, quantity, nextItems);
+        }
+
+        return nextItems;
+      });
     },
     [],
   );
 
-  const clearCart = useCallback(() => setItems([]), []);
+  const clearCart = useCallback(() => {
+    setItems((current) => {
+      if (current.length === 0) return current;
+
+      const previousItemCount = current.length;
+      queueMicrotask(() => {
+        logEvent("cart.clear", {
+          previousItemCount,
+          cartTotalItems: totalItems(current),
+          cartTotalPrice: totalPrice(current),
+        });
+      });
+
+      return [];
+    });
+  }, []);
 
   const getQuantity = useCallback(
     (productId: string, unit: ProductUnit) => getCartQuantity(items, productId, unit),

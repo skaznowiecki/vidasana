@@ -44,7 +44,7 @@ export function CartBar() {
           <Button
             type="button"
             disabled={items.length === 0}
-            onClick={() => openWhatsAppOrder(items)}
+            onClick={() => openWhatsAppOrder(items, "cart_bar")}
             className="h-11 shrink-0 rounded-full bg-sage px-4 text-cream hover:bg-sage-dark md:px-6"
           >
             <MessageCircle className="mr-2 h-4 w-4" />
